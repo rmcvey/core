@@ -100,7 +100,7 @@
 			return (temp === "" || temp === null);
 		};
 		core.extend.is_string = function(){
-			return (this instanceof String) || ();
+			return (this instanceof String);
 		};
 		core.extend.is_object = function(){
 			return (typeof this === "object") && !('splice' in this);
