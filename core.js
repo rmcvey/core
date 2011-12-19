@@ -5,6 +5,7 @@
 			ropera = /(opera)(?:.*version)?[ \/]([\w.]+)/,
 			rmsie = /(msie) ([\w.]+)/,
 			rmozilla = /(mozilla)(?:.*? rv:([\w.]+))?/;
+		
 		var _loadBrowser = (function(){
 			var match = null;
 			match = navigator.userAgent.match(/(mozilla)(?:.*? rv:([\w.]+))?/i)
@@ -21,7 +22,9 @@
 			}
 			window.browser.version = match[2];
 		})();
+		
 		var core = Object;
+		
 		core.extend = Object.prototype;
 			
 		'getElementsByClasssName' in document || (
@@ -95,24 +98,31 @@
 				return current;
 			}
 		);
+		
 		core.extend.empty = function(){
 			var temp = (this instanceof String) ? this.toString() : this;
 			return (temp === "" || temp === null);
 		};
+		
 		core.extend.is_string = function(){
 			return (this instanceof String);
 		};
+		
 		core.extend.is_object = function(){
 			return (typeof this === "object") && !('splice' in this);
 		};
+		
 		core.extend.is_array = function(){
 			return (typeof this === "object") && ('splice' in this);
 		};
+		
 		core.extend.is_callable = function(){
 			return (this !== undefined && typeof this === 'function');
 		};
+		
+		//string trim (can trim certain characters if passed in)
 		core.extend.trim = function(pattern){
-			
+
 		};
 		
 		core.extend.require = function(library){
@@ -121,13 +131,77 @@
 		
 		//merges arguments into type of 'this'
 		core.extend.merge = function(){
-			if(this.is_array()){
-				
+			for(var i = 0; i < arguments.length; i++){
+				for(var x in arguments[i]){
+					if(this.is_array()){
+						this.push(arguments[i][x]);
+					}else if(this.is_object()){
+						this[x] = arguments[i][x];
+					}
+				}
 			}
+			return this;
 		};
 		
-		core.extend.ajax = function(o){
+		core.extend.isEqual = function(rh){
+			if(this === rh){
+				return true;
+			}
+			var equal = typeof this === typeof rh;
+			if(equal){
+				if(this.is_object()){
+					for(var i in this){
+						if(!rh.hasOwnProperty(i)){
+							return false;
+						}
+					}
+				}
+			}
+			return false;
+		}
+		
+		core.extend.ajax = function(options){
+			var defaults = {
+				async:true,
+				type:'GET',
+				url:null,
+				data:null,
+				dataType:'HTML',
+				cache:true,
+				context:null,
+				headers:{},
+				contentType:'application/x-www-form-urlencoded',
+				beforeSend:function(settings){},
+				complete:function(){},
+				success:function(data, textStatus){},
+				error:function(textStatus, errorThrown){}
+			};
+			options = defaults.merge(options);
 			
+			var _request = function(options){
+				options.beforeSend(options.context, options);
+				if (window.XMLHttpRequest){
+					xmlhttp = new XMLHttpRequest();
+				}else{
+					xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+				}
+				xmlhttp.onreadystatechange=function(){
+					if (xmlhttp.readyState==4 && xmlhttp.status==200){
+						options.success.call(options.context, xmlhttp.responseText, xmlhttp.status)
+					}else{
+						options.error.call(options.context, xmlhttp.status, 'AJAX request failed');
+					}
+				}	
+				if(options.type == "GET" && options.data !== null){
+					var serialized = options.data.serialize();
+					options.url = options.url+'?'+serialized;
+					delete options.data;
+				}
+				xmlhttp.open(options.type, options.url, options.async);
+				xmlhttp.send(options.data);
+				options.complete.call(options.context);
+			}
+			_request(options);
 		};
 
 		core.extend.each = function(collection, callback){
@@ -143,7 +217,7 @@
 						}
 					}
 				}
-				return this.data;
+				return this;
 			}
 			var iterate = this.rquerySelectorAll(collection);
 			for(var i = 0; i < iterate.length; i++){
@@ -153,16 +227,21 @@
 			}
 			return this.data;
 		};
+		
 		core.browser = null;
+		
 		core.extend.size = function(){
 			return this.length;
 		};
+		
 		core.extend.find = function(selector){
 			return this.rquerySelectorAll(selector);
 		};
+		
 		core.extend.serialize = function(){
 			
 		};
+		
 		core.extend.text = function(value){
 			if(value == undefined){
 				if('innerText' in this){
@@ -179,16 +258,23 @@
 			}
 			return this;
 		};
+		
 		core.extend.html = function(value){
-			
+			if(value === undefined){
+				return this.innerHTML;
+			}else{
+				this.innerHTML = value;
+			}
+			return this;
 		};
+		
 		core.extend.attr = function(at, va){
 			if(va !== undefined){
-				if('splice' in this.element){
+				if('splice' in this){
 					
-				}
-				else{
-					this.el.setAttribute(at, va);
+				}else{
+					this.setAttribute(at, va);
+					return this;
 				}
 			}
 			else{
